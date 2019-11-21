@@ -29,14 +29,11 @@ namespace {
 Fibo::Fibo() : fibset(0) {}
 
 Fibo::Fibo(const std::string& str) : Fibo() {
-    //TODO: remove leading 0
     for (int i = str.length() - 1; i >= 0; i--) {
         fibset.push_back(str[i] == '1');
     }
-
     normalize();
-
-    std::cout << fibset << std::endl;
+    cutZeros();
 }
 
 Fibo::Fibo(const Fibo& that) : fibset(that.fibset) {
@@ -77,27 +74,31 @@ void Fibo::normalize() {
         while(j-1 >= 0 && fibset[j] == 1 && fibset[j-1] == 0){
             j-=2;
         }
-        if(j >= 1 && fibset[j] == 1 && fibset[j-1] == 1) {
+        if (j >= 1 && fibset[j] == 0 && fibset[j-1] == 1){
+            safeSpot = j;
+            i = j-1;
+        } else if(j >= 1 && fibset[j] == 1 && fibset[j-1] == 1) {
+
             fibset[j] = 0;
             fibset[j-1] = 0;
 
             for(size_t k = safeSpot-1; k > j+1;){
                 fibset[k] = 0;
                 k -= 2;
-
             }
+
             if(safeSpot == fibset.size()) fibset.push_back(0);
             fibset[safeSpot] = 1;
-            j >= 1 ? safeSpot = j - 1 : safeSpot = 0;
+            if(j >= 1) safeSpot = j - 1; // else for ends;
             if (j >= 2) i = j - 2;
             else i = 0;
-        } else if (j >= 1 && fibset[j] == 0 && fibset[j-1] == 1){
-            safeSpot = j;
-            i = j-1;
+        } else if(j >= 1 && fibset[j] == 0 && fibset[j-1] == 0) {
+            if(j >= 1) safeSpot = j - 1; // else for ends;
+            if (j >= 2) i = j - 2;
+            else i = 0;
         } else {
-            j >= 1 ? safeSpot = j - 1 : safeSpot = 0;
-            if (j >= 2) i = j - 2;
-            else i = 0;
+            assert(j <= 0);
+            i = 0;
         }
     }
 }
@@ -124,97 +125,107 @@ size_t Fibo::findK(unsigned long long n) {
 }
 
 
-int bitAt(size_t i, boost::dynamic_bitset<> const &c){
-    if(i < c.size()) return c[i];
+int Fibo::bitAt(size_t i) const {
+    if(i < fibset.size()) return fibset[i];
     else return 0;
 }
-void changeWindow(size_t i, std::vector<short>& window){
-    if(window[i] == 0) {
-        if (window[i - 1] == 2) {
-            if (window[i - 2] == 0) { //020x → 100(x++)
-                window[i] = 1;
-                window[i - 1] = 0;
-                window[i - 2] = 0;
-                window[i - 3]++;
-            } else if (window[i - 2] == 1) { //021x → 110x
-                window[i] = 1;
-                window[i - 1] = 1;
-                window[i - 2] = 0;
+void changeWindow(std::vector<short>& window){
+    if(window[0] == 0) {
+        if (window[1] == 2) {
+            if (window[2] == 0) { //020x → 100(x++)
+                window[0] = 1;
+                window[1] = 0;
+                window[2] = 0;
+                window[3]++;
+            } else if (window[2] == 1) { //021x → 110x
+                window[0] = 1;
+                window[1] = 1;
+                window[2] = 0;
             }
-        } else if (window[i - 1] == 3 && window[i - 2] == 0){ //030x → 110(x++)
-            window[i] = 1;
-            window[i - 1] = 1;
-            window[i - 2] = 0;
-            window[i - 3]++;
-        } else if (window[i - 1] == 1 && window[i - 2] == 0){ //012x → 101x
-            window[i] = 1;
-            window[i - 1] = 0;
-            window[i - 2] = 1;
+        } else if (window[1] == 3 && window[2] == 0){ //030x → 110(x++)
+            window[0] = 1;
+            window[1] = 1;
+            window[2] = 0;
+            window[3]++;
+        } else if (window[1] == 1 && window[2] == 2){ //012x → 101x
+            window[0] = 1;
+            window[1] = 0;
+            window[2] = 1;
         }
     }
 }
 void correctLastWindow(std::vector<short>& window){
-    if(window.at(0) == 3){ //  03 can be changed to 11
-        window[1] = 1;
-        window[0] = 1;
-    } else if(window.at(0) == 2){
-        if(window.at(1) == 0) { //  02 can be changed to 10
-            window[1] = 1;
-            window[0] = 0;
-        } else if(window.at(1) == 1){    // 012 can be changed to 101
+    if(window[3] == 3){ //  03 can be changed to 11
+        window[2] = 1;
+        window[3] = 1;
+    } else if(window[3] == 2){
+        if(window[2] == 0) { //  xx02 can be changed to xx10
             window[2] = 1;
-            window[1] = 0;
-            window[0] = 1;
+            window[3] = 0;
+        } else if(window[2] == 1){    // x012 can be changed to x101
+            window[1] = 1;
+            window[2] = 0;
+            window[3] = 1;
         }
-    } else if(window.at(0) == 0){
-        if(window.at(1) == 3) { // 030 can be changed to 111
-            window[2] = 1;
+    } else if(window[3] == 0){
+        if(window[2] == 3) { // x030 can be changed to x111
             window[1] = 1;
-            window[0] = 1;
-        } else if(window.at(1) == 2){  // 020 can be changed to 101
-            if(window.at(2) == 0) {
-                window[2] = 1;
-                window[1] = 0;
-                window[0] = 1;
-            } else if(window.at(2) == 1){ //0120 can be changed to 1010
-                window[3] = 1;
-                window[2] = 0;
+            window[2] = 1;
+            window[3] = 1;
+        } else if(window[2] == 2){  // x020 can be changed to x101
+            if(window[1] == 0) {
                 window[1] = 1;
-                window[0] = 0;
+                window[2] = 0;
+                window[3] = 1;
+            } else if(window[0] == 0 && window[1] == 1){ // 0120 can be changed to 1010
+                window[0] = 1;
+                window[1] = 0;
+                window[2] = 1;
+                window[3] = 0;
             }
         }
     }
 }
 
-Fibo& Fibo::operator += (const Fibo& b) { // TODO zrobic w pamieci stalej jak starczy czasu
-
-    boost::dynamic_bitset<> const &c1 = b.fibset;
-    boost::dynamic_bitset<> const &c2 = this->fibset;
-
-    std::vector<short> vector;
-    unsigned long maxLength = std::max(c1.size(), c2.size());
-    vector.reserve(maxLength); // TODO potrzebne?
-    for (unsigned long i = 0; i < maxLength; ++i) {
-        vector.push_back(bitAt(i, c1) + bitAt(i, c2));
+void Fibo::insertWindowIntoResult(unsigned long j, std::vector<short> window){
+    for (int i = 0; i < 4; ++i) {
+        fibset[j-i] = window[i];
     }
+}
 
-    if (vector.at(vector.size() - 1) != 0) vector.push_back(0);
-    for (size_t j = vector.size() - 1; j >= 3; --j) {
-        changeWindow(j, vector);
+const Fibo& Zero() {
+    static const Fibo zero;
+    return zero;
+}
+
+Fibo &Fibo::operator+=(const Fibo &b) {
+
+    unsigned long maxLength = std::max(fibset.size(), b.fibset.size());
+    Fibo result = Zero();
+    result.fibset.resize(maxLength + 1, 0);
+    if (maxLength + 1 < 4) {
+        result.fibset.resize(4, 0);
+        maxLength = 3;
     }
-    correctLastWindow(vector);
+    std::vector<short> window(4);
+    window[1] = 0;
+    window[2] = this->bitAt(maxLength) + b.bitAt(maxLength);
+    window[3] = this->bitAt(maxLength - 1) + b.bitAt(maxLength - 1);
 
-    std::reverse(vector.begin(), vector.end()); // troche gówno
-    std::ostringstream oss;
-    if (!vector.empty()) {
-        std::copy(vector.begin(), vector.end(),std::ostream_iterator<int>(oss, ""));
+    for (size_t j = maxLength + 1; j >= 3; --j) {
+        for(int i = 0; i <= 2; ++i) window[i] = window[i+1];
+        window[3] = this->bitAt(j - 3) + b.bitAt(j - 3);
+
+        changeWindow(window);
+        result.insertWindowIntoResult(j, window);
     }
-    std::string s = oss.str(); // dotąd ale działa
-
-    Fibo result(s);
+    correctLastWindow(window);
+    result.insertWindowIntoResult(3, window);
     result.normalize();
-    this->fibset = result.fibset; // TODO efektywne? może jakiś move?
+    result.cutZeros();
+    this->fibset = result.fibset;
     return *this;
+
 }
 
 const Fibo operator+(Fibo a, const Fibo& b) {
@@ -225,13 +236,13 @@ void Fibo::doBitwiseOperation(const Fibo &b, const std::function<bool(bool, bool
     const auto& fSet = b.fibset;
     unsigned long maxLength = std::max(fibset.size(), fSet.size());
     for (unsigned long i = 0; i < maxLength; ++i) {
-        fibset[i] = f(bitAt(i, fibset), bitAt(i, fSet));
+        fibset[i] = f(this->bitAt(i), b.bitAt(i));
     }
-    (*this).cutZeros();
+    cutZeros();
 }
 
 Fibo& Fibo::operator &= (const Fibo& b) {
-    (*this).doBitwiseOperation(b, std::bit_and<>());
+    doBitwiseOperation(b, std::bit_and<>());
     return *this;
 }
 
@@ -240,7 +251,7 @@ const Fibo& operator & (Fibo a, const Fibo& b) {
 }
 
 Fibo& Fibo::operator |= (const Fibo& b) {
-    (*this).doBitwiseOperation(b, std::bit_or<>());
+    doBitwiseOperation(b, std::bit_or<>());
     return *this;
 }
 
@@ -249,11 +260,15 @@ const Fibo& operator | (Fibo a, const Fibo& b) {
 }
 
 Fibo& Fibo::operator ^= (const Fibo& b) {
-    (*this).doBitwiseOperation(b, std::bit_xor<>());
+    doBitwiseOperation(b, std::bit_xor<>());
     return *this;
 }
 
 const Fibo& operator ^ (Fibo a, const Fibo& b) {
+    return a^=b;
+}
+
+const Fibo& operator << (Fibo a, const Fibo& b) {
     return a^=b;
 }
 
@@ -312,10 +327,13 @@ int main(int, char* []) {
     std::cout << "y[0] " << y[0] << " y[1] " << y[1] << std::endl;
 
     */
-    /*Fibo b("100100");
+
+
+
+   /* std::cout << std::endl << "testowanie + i +=" << std::endl;
+    Fibo b("100100");
     Fibo c("1010101");
 
-    std::cout << std::endl << "testowanie + i +=" << std::endl;
     Fibo e = b+c;
     std::cout << "e = b+c" << std::endl;
     std::cout << e.fibset << std::endl;
