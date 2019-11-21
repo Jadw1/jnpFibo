@@ -35,7 +35,7 @@ public:
     Fibo& operator &= (const Fibo& b);
     Fibo& operator |= (const Fibo& b);
     Fibo& operator ^= (const Fibo& b);
-    Fibo& operator <<= (unsigned long long rhs);
+    Fibo& operator <<= (size_t rhs);
     friend bool operator<(const Fibo& lhs, const Fibo& rhs);
     friend bool operator==(const Fibo& lhs, const Fibo& rhs);
 

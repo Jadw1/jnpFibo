@@ -171,7 +171,7 @@ Fibo& Fibo::operator^=(const Fibo& b) {
     return *this;
 }
 
-Fibo& Fibo::operator<<=(unsigned long long rhs) {
+Fibo& Fibo::operator<<=(size_t rhs) {
     fibset.resize(fibset.size() + rhs, false);
     fibset <<= rhs;
     return *this;
