@@ -88,7 +88,8 @@ namespace {
                     window[3] = 0;
                 }
             }
-        } else if(window[1] == 0 && window[2] == 2 && window[3] == 1){
+        }
+        else if (window[1] == 0 && window[2] == 2 && window[3] == 1) {
             window[1] = 1;
             window[2] = 1;
             window[3] = 0;
@@ -177,7 +178,7 @@ Fibo& Fibo::operator<<=(unsigned long long rhs) {
 }
 
 bool operator<(const Fibo& lhs, const Fibo& rhs) {
-    if(lhs.length() == rhs.length()) {
+    if (lhs.length() == rhs.length()) {
         return lhs.fibset < rhs.fibset;
     }
     else {
@@ -204,15 +205,16 @@ bool Fibo::bitAt(size_t i) const {
 }
 
 void Fibo::normalize() {
-    size_t i = fibset.size() - 1;
+    long i = fibset.size() - 1;
     while (fibset[i] == 0 && i > 0) { // iterate through leading zeros
         --i;
     }
     size_t safeSpot = i + 1; // last place seen where 1 can be put without breaching normality condition
 
     while (i >= 1) {
-        int j = i;
-        while (j - 1 >= 0 && fibset[j] == 1 && fibset[j - 1] == 0) { // iterate through "10" where there are no safe places
+        long j = i;
+        while (j - 1 >= 0 && fibset[j] == 1 &&
+               fibset[j - 1] == 0) { // iterate through "10" where there are no safe places
             j -= 2;
         }
         if (j >= 1 && fibset[j] == 0 && fibset[j - 1] == 1) {
@@ -222,7 +224,7 @@ void Fibo::normalize() {
         else if (j >= 1 && fibset[j] == 1 && fibset[j - 1] == 1) {
             fibset[j] = 0;
             fibset[j - 1] = 0;
-            for (size_t k = safeSpot - 1; k > j + 1;) { // zero all ones from passed "10" series
+            for (long k = safeSpot - 1; k > j + 1;) { // zero all ones from passed "10" series
                 fibset[k] = 0;
                 k -= 2;
             }
@@ -270,7 +272,7 @@ void Fibo::insertWindowIntoResult(unsigned long j, std::vector<short> window) {
 }
 
 void Fibo::insertLastWindowIntoResult(std::vector<short> window) {
-    for(int i = 0; i <= 3; ++i) fibset[3 - i] = window[i];
+    for (int i = 0; i <= 3; ++i) fibset[3 - i] = window[i];
 }
 
 unsigned long long Fibo::getFibNumber(size_t i) {
